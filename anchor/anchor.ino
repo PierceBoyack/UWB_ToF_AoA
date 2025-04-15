@@ -51,6 +51,15 @@ static double distance;
 extern dwt_txconfig_t txconfig_options;
 
 float estimateReceiveSignalPower(){
+  //check if CIADONE is set
+  uint8_t sysStatus[4];
+  dwt_readfromdevice(0x00, 0x44, 4, sysStatus);
+  uint32_t lilEndSysStatus = sysStatus[0] | (sysStatus[1] << 8) | 
+                            (sysStatus[2] << 16) | (sysStatus[3] << 24);
+  int ciaDone = 0;
+  while(ciaDone == 0){
+    ciaDone = (1 << 10) & lilEndSysStatus;
+  }
   //Get DGC Decision index
   uint8_t dgcDecisionRegister[4];
   dwt_readfromdevice(0x03, 0x60, 4, dgcDecisionRegister);
@@ -60,7 +69,7 @@ float estimateReceiveSignalPower(){
   dwt_readfromdevice(0x0C, 0x2C, 4, ipDiag1);
   uint32_t bigEndIpDiag1 = ((uint32_t)ipDiag1[3] << 24) | ((uint32_t)ipDiag1[2] << 16) |
                           ((uint32_t)ipDiag1[2] << 8) | ((uint32_t)ipDiag1[0]);
-  uint32_t CIR = bigEndIpDiag & 0x1FFFF;
+  uint32_t CIR = bigEndIpDiag1 & 0x1FFFF;
   //GET Preamble Accumulation Count
   uint8_t ipDiag12[4];
   uint32_t bigEndIpDiag12 = ((uint32_t)ipDiag12[3] << 24) | ((uint32_t)ipDiag12[2] << 16) |
@@ -71,6 +80,9 @@ float estimateReceiveSignalPower(){
   float A = 121.7;
   int cFactor = 0x200000; //2^21
   float rxLevel = 10*(log10((CIR*cFactor)/(PreambleAC*PreambleAC))) + (6*dgcDecision) - A;
+  Serial.printf("dgc: %u, ", dgcDecision);
+  Serial.printf("CIR: %u, ", CIR);
+  Serial.printf("Preamble: %u, ", PreambleAC);
   return rxLevel;
 }
 
@@ -128,7 +140,7 @@ void setup()
   spiSelect(PIN_SS);
 
   //enable CIA diagnostics, clear minDiag
-  uint_t minDiag[4];
+  uint8_t minDiag[4];
   dwt_readfromdevice(0x0E, 0X00, 4, minDiag);
   minDiag[2] &= ~(1 << 4);
   dwt_writetodevice(0x0E, 0x00, 4, minDiag);
@@ -254,11 +266,13 @@ void loop()
         snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
         test_run_info((unsigned char *)dist_str);
         client.write(dist_str, sizeof(dist_str));
+        delay(5);
         /* Display signal power */
         float powerEstimate = estimateReceiveSignalPower();
         char powerStr[16];
         memset(powerStr, '\0', 16);
         snprintf(powerStr, sizeof(powerStr), "Power: %3.2f dBm", powerEstimate);
+        Serial.printf("Power: %3.2f dBm ", powerEstimate);
         client.write(powerStr, 16);
       }
     }

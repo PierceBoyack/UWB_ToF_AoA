@@ -158,11 +158,6 @@ int main(int argc, char **argv){
                 exitStatus = 0;
             }
             executeCmdServer(cmd, args, server);
-        }
-        //incoming ESP to add
-        if(FD_ISSET(server->serverSocket, &readfds)){
-            printf("Incoming ESP\n");
-            addESP(esps, server->serverSocket);
         }        
         //ESP message
         for(int i = 0; i < NUMBER_OF_ESPS; i++){
@@ -170,7 +165,7 @@ int main(int argc, char **argv){
                 FD_ISSET(esps[i]->espSocket, &readfds);
                 memset(input, '\0', MAX_INPUT);
                 recv(esps[i]->espSocket, input, MAX_INPUT, 0);
-                printf("ESP Message: %s ", input);
+                printf("ESP Message: %s, ", input);
                 memset(input, '\0', MAX_INPUT);
                 recv(esps[i]->espSocket, input, MAX_INPUT, 0);
                 printf("%s\n", input);
@@ -183,6 +178,11 @@ int main(int argc, char **argv){
                     esps[i] = NULL;
                 }
             }
+        }
+        //incoming ESP to add
+        if(FD_ISSET(server->serverSocket, &readfds)){
+            printf("Incoming ESP\n");
+            addESP(esps, server->serverSocket);
         }
     }
     return 0;
