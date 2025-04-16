@@ -262,11 +262,11 @@ void loop()
         client.write(dist_str, sizeof(dist_str));
         /* Display signal power */
         float powerEstimate = estimateReceiveSignalPower();
-        char powerStr[16];
-        memset(powerStr, '\0', 16);
+        char powerStr[18];
+        memset(powerStr, '\0', 18);
         snprintf(powerStr, sizeof(powerStr), "Power: %3.2f dBm", powerEstimate);
         Serial.printf("Power: %3.2f dBm ", powerEstimate);
-        client.write(powerStr, 16);
+        client.write(powerStr, 18);
       }
     }
   }
