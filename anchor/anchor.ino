@@ -53,12 +53,10 @@ extern dwt_txconfig_t txconfig_options;
 float estimateReceiveSignalPower(){
   //check if CIADONE is set
   uint8_t sysStatus[4];
-  dwt_readfromdevice(0x00, 0x44, 4, sysStatus);
-  uint32_t lilEndSysStatus = sysStatus[0] | (sysStatus[1] << 8) | 
-                            (sysStatus[2] << 16) | (sysStatus[3] << 24);
   int ciaDone = 0;
   while(ciaDone == 0){
-    ciaDone = (1 << 10) & lilEndSysStatus;
+    dwt_readfromdevice(0x00, 0x44, 4, sysStatus);
+    ciaDone = (1 << 2) & sysStatus[1];
   }
   //Get DGC Decision index
   uint8_t dgcDecisionRegister[4];
@@ -67,15 +65,11 @@ float estimateReceiveSignalPower(){
   //Get Channel Impulse Response Power
   uint8_t ipDiag1[4];
   dwt_readfromdevice(0x0C, 0x2C, 4, ipDiag1);
-  uint32_t bigEndIpDiag1 = ((uint32_t)ipDiag1[3] << 24) | ((uint32_t)ipDiag1[2] << 16) |
-                          ((uint32_t)ipDiag1[2] << 8) | ((uint32_t)ipDiag1[0]);
-  uint32_t CIR = bigEndIpDiag1 & 0x1FFFF;
+  uint32_t CIR = (uint32_t)ipDiag1 & 0x1FFFF;
   //GET Preamble Accumulation Count
   uint8_t ipDiag12[4];
-  uint32_t bigEndIpDiag12 = ((uint32_t)ipDiag12[3] << 24) | ((uint32_t)ipDiag12[2] << 16) |
-                          ((uint32_t)ipDiag12[2] << 8) | ((uint32_t)ipDiag12[0]);
-  uint32_t PreambleAC = bigEndIpDiag12 & 0xFFF;
-  dwt_readfromdevice(0x0C, 0x2C, 4, ipDiag12);
+  dwt_readfromdevice(0x0C, 0x58, 4, ipDiag12);
+  uint32_t PreambleAC = (uint32_t)ipDiag12 & 0xFFF;
   //signal constant
   float A = 121.7;
   int cFactor = 0x200000; //2^21
@@ -266,7 +260,6 @@ void loop()
         snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
         test_run_info((unsigned char *)dist_str);
         client.write(dist_str, sizeof(dist_str));
-        delay(5);
         /* Display signal power */
         float powerEstimate = estimateReceiveSignalPower();
         char powerStr[16];
