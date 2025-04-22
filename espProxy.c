@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 #define MAX_INPUT 256
-#define NUMBER_OF_ESPS 2
+#define NUMBER_OF_ESPS 3
 
 struct ServerInfo {
 	char hostname[128];
@@ -22,6 +22,7 @@ struct ESP {
 	char ipAddr[INET_ADDRSTRLEN];
 	char port[5];
 	int espSocket;
+    double distanceToTag;
 };
 
 
@@ -162,13 +163,16 @@ int main(int argc, char **argv){
         //ESP message
         for(int i = 0; i < NUMBER_OF_ESPS; i++){
             if(esps[i] != NULL){
+                double receiveDouble;
                 FD_ISSET(esps[i]->espSocket, &readfds);
+                printf("Anchor %s info on Tag:\n", esps[i]->ipAddr);
+                //Get distance
                 memset(input, '\0', MAX_INPUT);
-                recv(esps[i]->espSocket, input, MAX_INPUT, 0);
-                printf("ESP Message: %s, ", input);
-                memset(input, '\0', MAX_INPUT);
-                recv(esps[i]->espSocket, input, MAX_INPUT, 0);
-                printf("%s\n", input);
+                recv(esps[i]->espSocket, input, sizeof(double), 0);
+                memcpy(&receiveDouble, input, sizeof(double));
+                esps[i]->distanceToTag = receiveDouble;
+                printf("Distance to Tag: %.2f\n", esps[i]->distanceToTag);
+
                 //close socket if esp is done, else print message
                 //anchor doesn't have CLOSE cmd yet though
                 if(strncmp(input, "CLOSE", 5) == 0){

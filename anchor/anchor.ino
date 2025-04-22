@@ -134,10 +134,10 @@ void setup()
   spiSelect(PIN_SS);
 
   //enable CIA diagnostics, clear minDiag
-  uint8_t minDiag[4];
-  dwt_readfromdevice(0x0E, 0X00, 4, minDiag);
-  minDiag[2] &= ~(1 << 4);
-  dwt_writetodevice(0x0E, 0x00, 4, minDiag);
+  // uint8_t minDiag[4];
+  // dwt_readfromdevice(0x0E, 0X00, 4, minDiag);
+  // minDiag[2] &= ~(1 << 4);
+  // dwt_writetodevice(0x0E, 0x00, 4, minDiag);
 
   //connect to WiFi and Server
   String serverIP;
@@ -258,15 +258,17 @@ void loop()
 
         /* Display computed distance on LCD. */
         snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
-        Serial.printf("%s, ", dist_str);
-        client.write(dist_str, sizeof(dist_str));
+        Serial.printf("%s\n", dist_str);
+        char distBuffer[sizeof(double)];
+        memcpy(distBuffer, &distance, sizeof(double));
+        client.write(distBuffer, sizeof(distance));
         /* Display signal power */
-        float powerEstimate = estimateReceiveSignalPower();
-        char powerStr[18];
-        memset(powerStr, '\0', 18);
-        snprintf(powerStr, sizeof(powerStr), "Power: %3.2f dBm", powerEstimate);
-        Serial.printf("Power: %3.2f dBm \n", powerEstimate);
-        client.write(powerStr, 18);
+        // float powerEstimate = estimateReceiveSignalPower();
+        // char powerStr[18];
+        // memset(powerStr, '\0', 18);
+        // snprintf(powerStr, sizeof(powerStr), "Power: %3.2f dBm", powerEstimate);
+        // Serial.printf("Power: %3.2f dBm \n", powerEstimate);
+        // client.write(powerStr, 18);
       }
     }
   }
