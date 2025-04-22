@@ -258,14 +258,14 @@ void loop()
 
         /* Display computed distance on LCD. */
         snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
-        test_run_info((unsigned char *)dist_str);
+        Serial.printf("%s, ", dist_str);
         client.write(dist_str, sizeof(dist_str));
         /* Display signal power */
         float powerEstimate = estimateReceiveSignalPower();
         char powerStr[18];
         memset(powerStr, '\0', 18);
         snprintf(powerStr, sizeof(powerStr), "Power: %3.2f dBm", powerEstimate);
-        Serial.printf("Power: %3.2f dBm ", powerEstimate);
+        Serial.printf("Power: %3.2f dBm \n", powerEstimate);
         client.write(powerStr, 18);
       }
     }
