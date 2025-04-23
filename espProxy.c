@@ -7,9 +7,11 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <math.h>
 
 #define MAX_INPUT 256
-#define NUMBER_OF_ESPS 3
+#define NUMBER_OF_ESPS 2
+#define ANCHOR_DISTANCE 1
 
 struct ServerInfo {
 	char hostname[128];
@@ -98,6 +100,30 @@ int executeCmdServer(char *cmd, char args[], struct ServerInfo *server){
     
 }
 
+// needs change if more than 2 anchors occur
+int triangulate(struct ESP *esps[]){
+    double distanceBuffer[2];
+    for(int i = 0; i < 2; i++){
+        if(esps[i] == NULL){
+            // cannot perform triangulation.  Missing anchors.
+            return -1;
+        }
+        distanceBuffer[i] = esps[i]->distanceToTag;
+    }
+    // solve angles, consider anchor B's distance as side a, & vice-versa
+    double a = distanceBuffer[1];
+    double b = distanceBuffer[0];
+    double c = ANCHOR_DISTANCE;
+    float angleA = acos((b*b + c*c - a*a)/(2*b*c)) * (180.0/M_PI);
+    float angleB = acos((a*a + c*c - b*b)/(2*a*c)) * (180.0/M_PI);
+    printf("-------------------------------\n");
+    printf("Anchor %s to Tag: (%.2f, %.2f)\n", esps[0]->ipAddr, b, angleA); //The first anchor connected to network
+    printf("Anchor %s to Tag: (%.2f, %.2f)\n", esps[1]->ipAddr, a, angleB); //The second anchor connected to network
+    printf("-------------------------------\n\n");
+    return 0;
+
+}
+
 //argv[1] = port to host on
 int main(int argc, char **argv){
 	/*Start Here*/
@@ -165,13 +191,11 @@ int main(int argc, char **argv){
             if(esps[i] != NULL){
                 double receiveDouble;
                 FD_ISSET(esps[i]->espSocket, &readfds);
-                printf("Anchor %s info on Tag:\n", esps[i]->ipAddr);
                 //Get distance
                 memset(input, '\0', MAX_INPUT);
                 recv(esps[i]->espSocket, input, sizeof(double), 0);
                 memcpy(&receiveDouble, input, sizeof(double));
                 esps[i]->distanceToTag = receiveDouble;
-                printf("Distance to Tag: %.2f\n", esps[i]->distanceToTag);
 
                 //close socket if esp is done, else print message
                 //anchor doesn't have CLOSE cmd yet though
@@ -188,6 +212,7 @@ int main(int argc, char **argv){
             printf("Incoming ESP\n");
             addESP(esps, server->serverSocket);
         }
+        triangulate(esps);
     }
     return 0;
 	
