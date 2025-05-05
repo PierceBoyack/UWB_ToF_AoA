@@ -40,8 +40,27 @@ static uint8_t rx_buffer[20];
 static uint32_t status_reg = 0;
 static uint64_t poll_rx_ts;
 static uint64_t resp_tx_ts;
+static uint8_t spicsBuffer[] = {0x0};
 
 extern dwt_txconfig_t txconfig_options;
+
+void configSleep(){
+  Serial.println("-----------------------------------------------------------");
+  Serial.println("Calibrating/Configuring Sleep Count: 5s");
+  uint32_t sleepTime = 0;
+  uint16_t lowPwrOscCal = 0;
+  uint16_t sleepTime16;
+  //measure low power oscillator frequency, set 5s timer
+  lowPwrOscCal = dwt_calibratesleepcnt();
+  sleepTime = ((uint32_t)lowPwrOscCal * 5) >> 12;
+  sleepTime16 = (uint16_t)sleepTime;
+  dwt_configuresleepcnt(sleepTime16);
+  
+  Serial.printf("Setting Sleep Configuration\nOn Wake: Run PGF Cal -> IDLE_PLL and Restore Config\nWake Events: Sleep Count Expiration, WAKEUP_PIN, SPICS Wake\n-----------------------------------------------------------\n");
+  uint16_t sleepParams = DWT_PGFCAL | DWT_GOTOIDLE | DWT_CONFIG;
+  uint8_t wakeupEvents = 0x40 | DWT_WAKE_WUP | DWT_WAKE_CSN;
+  dwt_configuresleep(sleepParams, wakeupEvents);
+}
 
 void setup()
 {
@@ -89,9 +108,9 @@ void setup()
   /* Next can enable TX/RX states output on GPIOs 5 and 6 to help debug, and also TX/RX LEDs
    * Note, in real low power applications the LEDs should not be used. */
   dwt_setlnapamode(DWT_LNA_ENABLE | DWT_PA_ENABLE);
-
+  configSleep();
   Serial.println("Range TX");
-  Serial.println("Setup over........");
+  Serial.println("Setup over........\n");
 }
 
 void loop()
@@ -158,6 +177,12 @@ void loop()
 
           /* Increment frame sequence number after transmission of the poll message (modulo 256). */
           frame_seq_nb++;
+          if (frame_seq_nb % 5 == 0){
+            Serial.println("Going to sleep");
+            dwt_entersleep(0);
+            Serial.println("Waking Up");
+            setup();
+          }
         }
       }
     }
