@@ -40,7 +40,6 @@ static uint8_t rx_buffer[20];
 static uint32_t status_reg = 0;
 static uint64_t poll_rx_ts;
 static uint64_t resp_tx_ts;
-static uint8_t spicsBuffer[] = {0x0};
 
 extern dwt_txconfig_t txconfig_options;
 
