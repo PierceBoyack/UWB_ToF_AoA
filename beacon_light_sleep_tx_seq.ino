@@ -88,27 +88,19 @@ void setup()
   dwt_configuretxrf(&txconfig_options);
 
   /* Configure sleep and wake-up parameters. */
-  dwt_configuresleep(DWT_CONFIG, DWT_PRES_SLEEP | DWT_WAKE_WUP | DWT_SLP_EN);
+  dwt_configuresleep(DWT_CONFIG, DWT_PRES_SLEEP | 0x08 | DWT_SLP_EN);
   dwt_entersleepaftertx(1);
 
   uint32_t reg = dwt_read32bitreg(SYS_STATUS_ID);
 
   /* need to disable default interrupts, device will not go to sleep if interrupt line is high */
   dwt_setinterrupt(SYS_ENABLE_LO_SPIRDY_ENABLE_BIT_MASK, 0, DWT_DISABLE_INT);
-
   dwt_write32bitreg(SYS_STATUS_ID, reg); //clear interrupt/events
-  digitalWrite(PIN_SS, LOW);
-  delayMicroseconds(500);
-  digitalWrite(PIN_SS)
-
-  Sleep(2); // Time needed for DW3000 to start up (transition from INIT_RC to IDLE_RC, or could wait for SPIRDY event) 
-
-  /* Restore the required configurations on wake */
-  dwt_restoreconfig();
 }
 
 void loop()
 {
+
   /* Write frame data to DW IC and prepare transmission. See NOTE 3 below.*/
   dwt_writetxdata(FRAME_LENGTH - FCS_LEN, tx_msg, 0); /* Zero offset in TX buffer. */
 
@@ -134,5 +126,18 @@ void loop()
   //esp_sleep_enable_ext0_wakeup(GPIO_NUM_34, 1);
 
   esp_sleep_enable_timer_wakeup(TX_DELAY_MS * 100);
-  esp_deep_sleep_start();
+  esp_light_sleep_start();
+
+  digitalWrite(PIN_SS, LOW);
+  delayMicroseconds(500);
+  digitalWrite(PIN_SS, HIGH);
+
+  while(!dwt_checkidlerc()) {
+    delay(1);
+  }
+  /* Restore the required configurations on wake */
+  dwt_restoreconfig();
+
+  tx_msg[BLINK_FRAME_SN_IDX]++;  
+  Serial.println(tx_msg[BLINK_FRAME_SN_IDX]);
 }
