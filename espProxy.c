@@ -56,6 +56,7 @@ void setServerInfo(struct ServerInfo *server){
 	
 	inet_ntop(AF_INET, &(myInfo.sin_addr), server->ipAddr, INET_ADDRSTRLEN); //set server IP
 	getnameinfo((struct sockaddr*)&myInfo, myInfoLen, server->hostname, 128, NULL, 0, NI_NAMEREQD); //set server name
+    printf("IP %s\n", server->ipAddr);
 }
 
 void addESP(struct ESP *esps[], int sockfd){
